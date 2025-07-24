@@ -289,3 +289,41 @@
   )
 )
 
+;; Global network statistics and administrative information retrieval system
+(define-read-only (fetch-network-coordination-overview)
+  (ok {
+    total-registered-participants: (var-get global-participant-counter),
+    master-coordination-controller: master-coordination-controller,
+    current-network-height: block-height
+  })
+)
+
+;; Participant management authority verification and control confirmation utility
+(define-read-only (verify-coordination-management (participant-id uint))
+  (match (map-get? network-participant-registry { participant-id: participant-id })
+    participant-data (ok (get coordination-manager participant-data))
+    participant-record-not-found
+  )
+)
+
+;; Comprehensive access permission evaluation and authorization status assessment
+(define-read-only (evaluate-coordination-privileges (participant-id uint) (access-requester principal))
+  (let
+    (
+      (participant-data (unwrap! (map-get? network-participant-registry { participant-id: participant-id })
+        participant-record-not-found))
+      (explicit-authorization (default-to false
+        (get operation-authorized
+          (map-get? coordination-access-matrix { participant-id: participant-id, access-requester: access-requester })
+        )
+      ))
+    )
+    ;; Return comprehensive authorization status with detailed privilege breakdown
+    (ok {
+      has-explicit-authorization: explicit-authorization,
+      is-coordination-manager: (is-eq (get coordination-manager participant-data) access-requester),
+      can-perform-operations: (or explicit-authorization (is-eq (get coordination-manager participant-data) access-requester)),
+      temporal-validity-status: (check-temporal-validity participant-id)
+    })
+  )
+)
